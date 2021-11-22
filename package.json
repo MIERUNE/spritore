@@ -1,0 +1,36 @@
+{
+  "name": "@kartore/spritore",
+  "version": "1.0.0",
+  "description": "Generate sprites for maps.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kartore/spritore.git"
+  },
+  "author": {
+    "name": "NEKOYASAN",
+    "email": "hello@nekoyasan.me"
+  },
+  "bugs": {
+    "url": "https://github.com/Kartore/spritore/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "@types/node": "^16.11.7",
+    "@types/sharp": "^0.29.3",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "glob": "^7.2.0",
+    "sharp": "^0.29.2"
+  }
+}
