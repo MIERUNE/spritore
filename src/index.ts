@@ -1,8 +1,8 @@
-import {isAbsolute, join, resolve, basename} from 'path';
+import {basename, isAbsolute, join, resolve} from 'path';
 import {sync} from 'glob'
-import {readFileSync, writeFileSync} from "fs";
+import {readFileSync} from "fs";
 import * as sharp from 'sharp';
-import {createFiles} from "./generator";
+import {createFiles} from "./generator.js";
 
 
 type Img = {
@@ -62,41 +62,28 @@ async function generate({
     throw new Error("The input folder must contain at least one image file.")
   }
 
-  const normalImages: ResizedImg[] = []
   const retinaImages: ResizedImg[] = []
-  const resizeCreators = input.map(({img, id}) => {
-    return new Promise((resolve, reject) => {
-      sharp(img).png().toBuffer((error, buffer, info) => {
-        if (error)
-          reject(new Error("Failed to create normal size image." + id))
-        normalImages.push({
-          img: buffer,
-          id: id,
-          width: info.width,
-          height: info.height
-        })
-        resolve(undefined);
-        /*
-        sharp(img).resize(info.width * 2).png().toBuffer((retinaError, retinaBuffer, retinaInfo) => {
-          if (retinaError)
-            reject(new Error("Failed to create retina size image." + id))
-          retinaImages.push({
-            img: retinaBuffer,
-            id: id,
-            width: retinaInfo.width,
-            height: retinaInfo.height
-          })
-        })*/
+  const normalImagesPromise = input.map(({img, id}) => {
+    return (async (img, id) => {
+      const s1x = await sharp(img).ensureAlpha().png().raw().toBuffer({resolveWithObject: true})
+      const s2x = await sharp(img).resize(s1x.info.width * 2).ensureAlpha().png().raw().toBuffer({resolveWithObject: true})
+      retinaImages.push({
+        img: s2x.data,
+        id: id,
+        width: s2x.info.width,
+        height: s2x.info.height
       })
-    })
+      return {
+        img: s1x.data,
+        id: id,
+        width: s1x.info.width,
+        height: s1x.info.height
+      }
+    })(img, id)
   })
-  await Promise.all(resizeCreators)
-  resizeCreators.length = 0
-  await createFiles(imagePadding, normalImages, outputPath, outputFileName)
-  normalImages.length = 0
-  /*
-  await createFiles(imagePadding, retinaImages, outputPath, outputFileName + "@2x")
-  retinaImages.length = 0*/
+  const normalImages = await Promise.all(normalImagesPromise)
+  await createFiles(imagePadding, normalImages, outputPath, outputFileName, false)
+  await createFiles(imagePadding, retinaImages, outputPath, outputFileName + "@2x", true)
 }
 
 export {generate};
